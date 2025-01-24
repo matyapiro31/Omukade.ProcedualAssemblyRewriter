@@ -13,8 +13,8 @@ namespace Omukade.AutoPAR.Rainier
     {
         public class NoteEntry
         {
-            public string Header;
-            public List<string> LineItems;
+            public string Header { get; set; }
+            public List<string> LineItems { get; set; }
         }
 
         public string Version;

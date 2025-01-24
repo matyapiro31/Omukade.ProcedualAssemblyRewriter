@@ -11,8 +11,8 @@ namespace Omukade.AutoPAR.Rainier
     {
         public record class ArtifactDetails
         {
-            public string MD5;
-            public string Url;
+            public string MD5 {get;set;}
+            public string Url { get;set;}
         }
 
         public ArtifactDetails CompressedArtifact;

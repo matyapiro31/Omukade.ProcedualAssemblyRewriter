@@ -4,7 +4,7 @@ namespace Omukade.AutoPAR
 {
     public static class AssemblyLoadInterceptor
     {
-        private static string searchFolder;
+        private static string searchFolder { get; set; }
         public static ParCore ParCore { get; } = new ParCore();
 
         /// <summary>
