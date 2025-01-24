@@ -18,13 +18,17 @@ AutoPAR permits this process to occur without the need to distribute modified 3r
 ## Usage - ManualPAR
 ManualPAR is a companion tool that batch processes assemblies in a folder using AutoPAR. This tool is mainly intended to prepare preprocessed files that can be compiled against.
 
-Windows: ```omukade-par.exe [--parallel] [--dry-run] (source folder)```
+Windows: ```omukade-par.exe [--parallel] [--dry-run] [--rainier-specific] [--fetch-update] [--auto-detect-ptcgl] (source folder)```
 
-Linux: ```omukade-par [--parallel] [--dry-run] (source folder)```
+Linux: ```omukade-par [--parallel] [--dry-run] [--rainier-specific] [--fetch-update] [--auto-detect-ptcgl] (source folder)```
 
-* `(source folder)` - **required**, the folder containing .NET assemblies to update. (The original files will not be changed.)
+* `(source folder)` - The folder containing .NET assemblies to update. (The original files will not be changed.) If not specifed, a PTCGL update in Omukade Shared Data Directory will be used as a source.
 * `--parallel` - Performance tweak to update assembiles in parallel instead of sequentially. This process is typically already fast enough you probably don't need it.
 * `--dry-run` - Do the work, but don't save anything. You probably don't need this either; it's mainly for testing.
+* `--rainier-specific` - **required for PTCGL development.** Perform specific additional patches needed to support PTCGL companion software such as Omukade Cheyenne.
+* `--fetch-update` - **PTCGL specific.** Checks for updates to the PTCGL client and downloads them to the Omukade Shared Data Directory before processing begins.
+* `--auto-detect-ptcgl`- **PTCGL specific, Windows only.** Detects the PTCGL install directory automatically and uses that as the source folder. Output will be send to `Managed_PAR` under the PTCGL install directory.
+Any other source folder will be ignored.
 
 A new folder in the same location as the source folder with the suffix `_PAR` appended will be created, and used for output files. (eg, suppling `C:\stuff` will output files to `C:\stuff_PAR`)
 
@@ -51,16 +55,26 @@ with AutoPAR handling this process at run-time. This can be accomplished by:
 * Use of `CopyLocal = false` on all PAR assemblies, so assemblies are not copied to the output folder.
 * Create a folder in your output folder, copy all needed _unmodified_ assemblies to it, and direct AutoPAR to this folder -OR- use a configuration setting to point AutoPAR to the location of the _unmodified_ assemblies.
 
-Regardless of Auto or Manual mode, AutoPAR must be initialized as soon as possible before any code that could reference the types loaded by AutoPAR is called.
-No types from an AutoPAR processed assembly can be used in any class or method used before or during the initialization of AutoPAR, as the .NET runtime will try to read type metadata (that can't be found yet) before AutoPAR is initialized.
+AutoPAR must be initialized as soon as possible before any code that could reference the types loaded by AutoPAR is called.
+No types from an AutoPAR processed assembly can be used in any class or method used before or during the initialization of AutoPAR, as the .NET runtime will try to read type metadata (that can't be found yet) before AutoPAR is initialized, as this _will_ give you exceptions about loading types.
 Consider eg, a bootstraper `Main()` method that then calls the rest of your application defined in another type and method.
 
-Developers leveraging any PAR mechanism need to be mindful not to accidentially distribute the modified pre-processed assemblies used for compilation, as this may be interpreted as distributing a derived work.
+Developers leveraging any PAR mechanism (manual or auto) need to be mindful not to accidentially distribute the modified pre-processed assemblies used for compilation, as this may be interpreted as distributing a derived work.
 Every effort should be made to ensure that an end-user can make application work by downloading or using an existing install of an official 1st-party package that contains all needed assemblies, and copying those assemblies to whatever folder was configured in AutoPAR. (This can be in-place if eg, the location of an existing install containing the needed assemblies can be determined/supplied.)
+
+### Common Weird Issues
+#### AssemblyLoadException before your Main() is even called
+Your `Main()`, the class that contains it (eg, the default `Program` for console apps), or a class with a static constructor refers to a type in an assembly processed by AutoPAR. As AutoPAR has not yet been initialized, refering to such classes will fail.
+
+Refactor the code to minimize these references and initializations until after AutoPAR is initialized, then call your other initalization methods as needed.
 
 ### Other Notes on Processed Assemblies
 * Processed assemblies retain their original assembly name, version, and other attributes.
 * Signatures are not currently updated or stripped, and will be (correctly) rendered invalid.
 
 ## License
-This software is licensed under the terms of the [GNU AGPL v3.0](https://www.gnu.org/licenses/agpl-3.0.en.html)
+This software is licensed under the terms of the [GNU AGPL v3.0](https://www.gnu.org/licenses/agpl-3.0.en.html).
+
+In some use cases, this software may integrate portions of its own code into other assemblies whether by adding new code and replacing or otherwise modifying existing code.
+License is claimed only on the software performing the transformation, not any resulting transformation it creates. (ie. the resulting library is not AGPL-licensed/tainted).
+However, Cecil Processors added by other libraries may have their own license terms which may taint the resulting library; please consult these library's licenses to ensure this is not an issue for your use-case.
